@@ -2,7 +2,9 @@ Directory structure:
 └── task_tracker/
     ├── docker-compose.yml
     ├── Dockerfile
+    ├── HELP.md
     ├── implantacao.txt
+    ├── LICENSE
     ├── mvnw
     ├── mvnw.cmd
     ├── pom.xml
@@ -17,6 +19,16 @@ Directory structure:
     │   │   │               ├── domain/
     │   │   │               │   ├── Tarefa.java
     │   │   │               │   └── Usuario.java
+    │   │   │               ├── dto/
+    │   │   │               │   ├── tarefa/
+    │   │   │               │   │   ├── TarefaRequestDTO.java
+    │   │   │               │   │   └── TarefaResponseDTO.java
+    │   │   │               │   └── usuario/
+    │   │   │               │       ├── UsuarioRequestDTO.java
+    │   │   │               │       └── UsuarioResponseDTO.java
+    │   │   │               ├── mapper/
+    │   │   │               │   ├── TarefaMapper.java
+    │   │   │               │   └── UsuarioMapper.java
     │   │   │               └── repository/
     │   │   │                   ├── TarefaRepository.java
     │   │   │                   └── UsuarioRepository.java
@@ -110,6 +122,42 @@ COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
+
+================================================
+FILE: HELP.md
+================================================
+# Getting Started
+
+### Reference Documentation
+For further reference, please consider the following sections:
+
+* [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
+* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/4.1.0/maven-plugin)
+* [Create an OCI image](https://docs.spring.io/spring-boot/4.1.0/maven-plugin/build-image.html)
+* [Spring Boot DevTools](https://docs.spring.io/spring-boot/4.1.0/reference/using/devtools.html)
+* [Spring Web](https://docs.spring.io/spring-boot/4.1.0/reference/web/servlet.html)
+* [Spring Data JPA](https://docs.spring.io/spring-boot/4.1.0/reference/data/sql.html#data.sql.jpa-and-spring-data)
+* [Flyway Migration](https://docs.spring.io/spring-boot/4.1.0/how-to/data-initialization.html#howto.data-initialization.migration-tool.flyway)
+* [Validation](https://docs.spring.io/spring-boot/4.1.0/reference/io/validation.html)
+
+### Guides
+The following guides illustrate how to use some features concretely:
+
+* [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
+* [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
+* [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
+* [Accessing Data with JPA](https://spring.io/guides/gs/accessing-data-jpa/)
+* [Validation](https://spring.io/guides/gs/validating-form-input/)
+
+### Maven Parent overrides
+
+Due to Maven's design, elements are inherited from the parent POM to the project POM.
+While most of the inheritance is fine, it also inherits unwanted elements like `<license>` and `<developers>` from the parent.
+To prevent this, the project POM contains empty overrides for these elements.
+If you manually switch to a different parent and actually want the inheritance, you need to remove those overrides.
+
+
 
 
 ================================================
@@ -220,6 +268,33 @@ Bash
 
 gitingest .
 Ele vai gerar um arquivo chamado digest.txt na raiz do seu projeto contendo todo a estrutura e os cÃ³digos. Basta abrir esse arquivo no IntelliJ, dar um Ctrl + A e Ctrl + C!
+
+
+================================================
+FILE: LICENSE
+================================================
+MIT License
+
+Copyright (c) 2026 Fernando Campos da Cruz.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 
 
 ================================================
@@ -909,6 +984,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @EqualsAndHashCode(of = "id")
 public class Tarefa {
 
@@ -962,6 +1038,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @EqualsAndHashCode(of = "id")
 public class Usuario {
 
@@ -987,6 +1064,170 @@ public class Usuario {
     @PrePersist
     public void prePersist() {
         this.dataCriacao = LocalDateTime.now();
+    }
+
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/dto/tarefa/TarefaRequestDTO.java
+================================================
+package com.satolepsystems.task_tracker.dto.tarefa;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+public record TarefaRequestDTO(
+
+        @NotBlank(message = "O tÃ­tulo Ã© obrigatÃ³rio")
+        @Size(max = 150, message = "O tÃ­tulo deve ter no mÃ¡ximo 150 caracteres.")
+        String titulo,
+
+        String descricao,
+
+        @NotNull(message = "O ID do usuÃ¡rio Ã© obrigatÃ³rio.")
+        Long usuarioId
+
+) {
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/dto/tarefa/TarefaResponseDTO.java
+================================================
+package com.satolepsystems.task_tracker.dto.tarefa;
+
+import java.time.LocalDateTime;
+
+public record TarefaResponseDTO(
+
+        Long id,
+        String tittulo,
+        String descricao,
+        Boolean concluida,
+        LocalDateTime dataCriacao,
+        Long usuarioId
+
+) {
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/dto/usuario/UsuarioRequestDTO.java
+================================================
+package com.satolepsystems.task_tracker.dto.usuario;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record UsuarioRequestDTO(
+
+        @NotBlank(message = "O nome Ã© obrigatÃ³rio.")
+        @Size(max = 100, message = "O nome deve ter no mÃ¡ximo 100 caracteres.")
+        String nome,
+
+        @NotBlank(message = "O email Ã© obrigatÃ³rio.")
+        @Email(message = "O email Ã© obrigatÃ³rio.")
+        @Size(max = 100, message = "O email deve ter no mÃ¡ximo 100 caracteres.")
+        String email,
+
+        @NotBlank(message = "A senha Ã© obrigatÃ³ria.")
+        @Size(min = 6, message = "A senha deve ter no mÃ­nimo 6 caracteres.")
+        String senha
+
+) {
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/dto/usuario/UsuarioResponseDTO.java
+================================================
+package com.satolepsystems.task_tracker.dto.usuario;
+
+import java.time.LocalDateTime;
+
+public record UsuarioResponseDTO(
+
+        Long id,
+        String nome,
+        String email,
+        LocalDateTime dataCriacao
+
+) {
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/mapper/TarefaMapper.java
+================================================
+package com.satolepsystems.task_tracker.mapper;
+
+import com.satolepsystems.task_tracker.domain.Tarefa;
+import com.satolepsystems.task_tracker.dto.tarefa.TarefaRequestDTO;
+import com.satolepsystems.task_tracker.dto.tarefa.TarefaResponseDTO;
+import org.springframework.stereotype.Component;
+
+@Component
+public class TarefaMapper {
+
+    public Tarefa toEntity(TarefaRequestDTO dto) {
+        return Tarefa.builder()
+                .titulo(dto.titulo())
+                .descricao(dto.descricao())
+                .concluida(false)
+                .build();
+    }
+
+    public TarefaResponseDTO toTarefaResponseDTO(Tarefa tarefa) {
+        return new TarefaResponseDTO(
+                tarefa.getId(),
+                tarefa.getTitulo(),
+                tarefa.getDescricao(),
+                tarefa.getConcluida(),
+                tarefa.getDataCriacao(),
+                tarefa.getUsuario() != null ? tarefa.getUsuario().getId() : null
+        );
+    }
+
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/mapper/UsuarioMapper.java
+================================================
+package com.satolepsystems.task_tracker.mapper;
+
+import com.satolepsystems.task_tracker.domain.Usuario;
+import com.satolepsystems.task_tracker.dto.usuario.UsuarioRequestDTO;
+import com.satolepsystems.task_tracker.dto.usuario.UsuarioResponseDTO;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UsuarioMapper {
+
+    public Usuario toEntity(UsuarioRequestDTO dto) {
+        return Usuario.builder()
+                .nome(dto.nome())
+                .email(dto.email())
+                .senha(dto.senha())
+                .build();
+    }
+
+    public UsuarioResponseDTO toUsarioResponseDTO(Usuario usuario) {
+        return new UsuarioResponseDTO(
+                usuario.getId(),
+                usuario.getNome(),
+                usuario.getEmail(),
+                usuario.getDataCriacao()
+        );
     }
 
 }
