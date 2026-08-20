@@ -1,0 +1,17 @@
+CREATE TABLE tb_usuarios (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    data_criacao TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE tb_tarefas (
+    id BIGSERIAL PRIMARY KEY,
+    titulo VARCHAR(150) NOT NULL,
+    descricao TEXT,
+    concluida BOOLEAN NOT NULL DEFAULT FALSE,
+    data_criacao TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    usuario_id BIGINT NOT NULL,
+    CONSTRAINT fk_tarefas_usuario FOREIGN KEY (usuario_id) REFERENCES tb_usuarios(id) ON DELETE CASCADE
+);

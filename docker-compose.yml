@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: task_tracker_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: task_tracker_db_001
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_task_tracker_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d task_tracker_db_001"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - task-tracker-network
+
+  app-api:
+    build: .
+    container_name: task_tracker_api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres-db
+      DB_PORT: 5432
+      DB_NAME: task_tracker_db_001
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - task-tracker-network
+
+volumes:
+  postgres_task_tracker_data:
+
+networks:
+  task-tracker-network:
+    driver: bridge
