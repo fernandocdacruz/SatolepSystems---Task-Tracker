@@ -1,5 +1,5 @@
 Directory structure:
-└── SatolepSystems---Task-Tracker/
+└── task_tracker/
     ├── docker-compose.yml
     ├── Dockerfile
     ├── HELP.md
@@ -16,6 +16,9 @@ Directory structure:
     │   │   │       └── satolepsystems/
     │   │   │           └── task_tracker/
     │   │   │               ├── TaskTrackerApplication.java
+    │   │   │               ├── controller/
+    │   │   │               │   ├── TarefaController.java
+    │   │   │               │   └── UsuarioController.java
     │   │   │               ├── domain/
     │   │   │               │   ├── Tarefa.java
     │   │   │               │   └── Usuario.java
@@ -27,6 +30,8 @@ Directory structure:
     │   │   │               │       ├── UsuarioRequestDTO.java
     │   │   │               │       └── UsuarioResponseDTO.java
     │   │   │               ├── infrastucture/
+    │   │   │               │   ├── config/
+    │   │   │               │   │   └── SwaggerConfig.java
     │   │   │               │   └── exceptions/
     │   │   │               │       ├── BusinessException.java
     │   │   │               │       ├── GlobalExceptionHandler.java
@@ -173,8 +178,8 @@ If you manually switch to a different parent and actually want the inheritance, 
 FILE: implantacao.txt
 ================================================
 organizar melhor os dtos, dividivir eles em subpack
-organizar melhor as excessões no meu handler
-presta atenção no docker antes do projeto
+organizar melhor as excessÃµes no meu handler
+presta atenÃ§Ã£o no docker antes do projeto
 
 jsons dos usuarios cadastrados
 
@@ -190,8 +195,8 @@ jsons dos usuarios cadastrados
   "role": "ADMIN"
 }
 
-Fluxo de Implementação
-1.1. Configuração Inicial e Entidades:Dependências e Modelo de Dados.Adicione as dependências do Spring Boot Starter Security e jjwt (Java JWT) no pom.xml.
+Fluxo de ImplementaÃ§Ã£o
+1.1. ConfiguraÃ§Ã£o Inicial e Entidades:DependÃªncias e Modelo de Dados.Adicione as dependÃªncias do Spring Boot Starter Security e jjwt (Java JWT) no pom.xml.
 Crie a entidade Usuario implementando UserDetails e um Enum para as Roles (ex: ROLE_ADMIN, ROLE_USER).
 Java
 
@@ -199,59 +204,59 @@ public enum Role {
     ROLE_ADMIN,
     ROLE_USER
 }
-2.2. Repositório e UserDetailsService:Acesso aos Dados.Crie o UsuarioRepository com um método para buscar por login/email (findByLogin).
-Implemente a interface UserDetailsService do Spring Security. Ela será usada pelo Spring para buscar o usuário no banco de dados durante o processo de autenticação.
-3.3. Serviço de JWT (TokenService):Manipulação do Token.Crie uma classe utilitária para gerar e validar o token JWT. Ela deve ter dois métodos principais:
-gerarToken(Usuario usuario): Cria o token assinado incluindo o login e as Roles do usuário nas claims.
-validarToken(String token): Decodifica o token, verifica a assinatura e retorna o login do usuário.
-4.4. Filtro de Autenticação (SecurityFilter):Interceptação de Requisições.Crie um filtro que herda de OncePerRequestFilter. A cada requisição HTTP recebida:
-Extrai o token do cabeçalho Authorization: Bearer <token>.
-Se o token for válido, recupera o usuário no banco.
-Cria o objeto UsernamePasswordAuthenticationToken com as autoridades (roles) do usuário e salva no SecurityContextHolder.
-5.5. SecurityConfigurations:Configuração do Spring Security.Crie a classe de configuração @Configuration e @EnableWebSecurity definindo a SecurityFilterChain:
-Defina o gerenciamento de sessão como Stateless (SessionCreationPolicy.STATELESS).
-Desabilite o csrf (desnecessário para APIs REST com JWT).
-Configure a autorização das rotas usando hasRole ou hasAnyRole.
+2.2. RepositÃ³rio e UserDetailsService:Acesso aos Dados.Crie o UsuarioRepository com um mÃ©todo para buscar por login/email (findByLogin).
+Implemente a interface UserDetailsService do Spring Security. Ela serÃ¡ usada pelo Spring para buscar o usuÃ¡rio no banco de dados durante o processo de autenticaÃ§Ã£o.
+3.3. ServiÃ§o de JWT (TokenService):ManipulaÃ§Ã£o do Token.Crie uma classe utilitÃ¡ria para gerar e validar o token JWT. Ela deve ter dois mÃ©todos principais:
+gerarToken(Usuario usuario): Cria o token assinado incluindo o login e as Roles do usuÃ¡rio nas claims.
+validarToken(String token): Decodifica o token, verifica a assinatura e retorna o login do usuÃ¡rio.
+4.4. Filtro de AutenticaÃ§Ã£o (SecurityFilter):InterceptaÃ§Ã£o de RequisiÃ§Ãµes.Crie um filtro que herda de OncePerRequestFilter. A cada requisiÃ§Ã£o HTTP recebida:
+Extrai o token do cabeÃ§alho Authorization: Bearer <token>.
+Se o token for vÃ¡lido, recupera o usuÃ¡rio no banco.
+Cria o objeto UsernamePasswordAuthenticationToken com as autoridades (roles) do usuÃ¡rio e salva no SecurityContextHolder.
+5.5. SecurityConfigurations:ConfiguraÃ§Ã£o do Spring Security.Crie a classe de configuraÃ§Ã£o @Configuration e @EnableWebSecurity definindo a SecurityFilterChain:
+Defina o gerenciamento de sessÃ£o como Stateless (SessionCreationPolicy.STATELESS).
+Desabilite o csrf (desnecessÃ¡rio para APIs REST com JWT).
+Configure a autorizaÃ§Ã£o das rotas usando hasRole ou hasAnyRole.
 Registre o seu SecurityFilter para rodar antes do UsernamePasswordAuthenticationFilter.
-6.6. Controller de Autenticação:Endpoints Públicos.Crie os endpoints /auth/login e /auth/register:
+6.6. Controller de AutenticaÃ§Ã£o:Endpoints PÃºblicos.Crie os endpoints /auth/login e /auth/register:
 No registro, lembre-se de codificar a senha com PasswordEncoder (BCrypt) antes de salvar.
-No login, autentique o usuário, chame o TokenService e retorne o JWT gerado no corpo da resposta.
+No login, autentique o usuÃ¡rio, chame o TokenService e retorne o JWT gerado no corpo da resposta.
 
-Conexão com API externa:
+ConexÃ£o com API externa:
 
 1. Mapear o JSON de Resposta (DTOs)
 Analise o JSON que a API externa devolve e crie records para representar essa estrutura.
 
-Use a anotação @JsonProperty("nome_no_json") para mapear campos do JSON que possuem nomes diferentes das suas variáveis Java (ex: de bid para valorCompra).
+Use a anotaÃ§Ã£o @JsonProperty("nome_no_json") para mapear campos do JSON que possuem nomes diferentes das suas variÃ¡veis Java (ex: de bid para valorCompra).
 2. Configurar o Cliente HTTP (RestClient)
-No Spring Boot 3.2+, o RestClient é a ferramenta padrão para requisições síncronas.
+No Spring Boot 3.2+, o RestClient Ã© a ferramenta padrÃ£o para requisiÃ§Ãµes sÃ­ncronas.
 
 Defina a URL base da API externa (ex: [https://economia.awesomeapi.com.br/json/last](https://economia.awesomeapi.com.br/json/last)).
-Você pode instanciar o RestClient diretamente no serviço via RestClient.builder().baseUrl(...).build() ou prover um @Bean de RestClient.Builder.
-3. Criar a Classe de Serviço (Service)
-A classe anotada com @Service vai conter a regra de integração:
+VocÃª pode instanciar o RestClient diretamente no serviÃ§o via RestClient.builder().baseUrl(...).build() ou prover um @Bean de RestClient.Builder.
+3. Criar a Classe de ServiÃ§o (Service)
+A classe anotada com @Service vai conter a regra de integraÃ§Ã£o:
 
-Monte a requisição usando o método HTTP desejado (.get(), .post(), etc.) e a URI relativa.
+Monte a requisiÃ§Ã£o usando o mÃ©todo HTTP desejado (.get(), .post(), etc.) e a URI relativa.
 Use o .retrieve() para executar a chamada.
-Trate erros de resposta com .onStatus(), lançando exceções de negócio personalizadas se necessário.
+Trate erros de resposta com .onStatus(), lanÃ§ando exceÃ§Ãµes de negÃ³cio personalizadas se necessÃ¡rio.
 Converta o corpo da resposta no seu DTO usando .body(MeuDto.class).
 Extraia e valide os dados recebidos antes de retornar.
-4. Configurar as Permissões de Acesso (SecurityConfigurations)
+4. Configurar as PermissÃµes de Acesso (SecurityConfigurations)
 Ajuste as regras do Spring Security para definir quem pode acessar o recurso:
 
-Libere a rota pública com .permitAll() ou exija autenticação e roles específicas (ex: .hasAnyRole("USER", "ADMIN")).
+Libere a rota pÃºblica com .permitAll() ou exija autenticaÃ§Ã£o e roles especÃ­ficas (ex: .hasAnyRole("USER", "ADMIN")).
 5. Expor o Endpoint (Controller)
 Crie um @RestController que injeta o seu Service:
 
 Mapeie a rota HTTP (ex: @GetMapping("/api/cotacoes/dolar")).
-Invoque o serviço de integração e devolva os dados encapsulados em um ResponseEntity.
+Invoque o serviÃ§o de integraÃ§Ã£o e devolva os dados encapsulados em um ResponseEntity.
 
-1. Usar a extensão "Gitingest" no Terminal do IntelliJ (A mais rápida 🚀)
-O Gitingest (ou ferramentas similares de CLI como code2prompt ou files-to-prompt) varre o diretório do seu projeto, respeita o .gitignore (para não pegar as pastas .idea, target ou build) e gera um único arquivo de texto com todo o código formatado.
+1. Usar a extensÃ£o "Gitingest" no Terminal do IntelliJ (A mais rÃ¡pida ðŸš€)
+O Gitingest (ou ferramentas similares de CLI como code2prompt ou files-to-prompt) varre o diretÃ³rio do seu projeto, respeita o .gitignore (para nÃ£o pegar as pastas .idea, target ou build) e gera um Ãºnico arquivo de texto com todo o cÃ³digo formatado.
 
 Como fazer:
-Abra o Terminal integrado do IntelliJ (Alt + F12 ou opção Terminal no rodapé).
-Se você tem o Python instalado, execute no terminal:
+Abra o Terminal integrado do IntelliJ (Alt + F12 ou opÃ§Ã£o Terminal no rodapÃ©).
+Se vocÃª tem o Python instalado, execute no terminal:
 
 Bash
 
@@ -261,12 +266,12 @@ Depois, dentro da pasta do seu projeto, rode:
 Bash
 
 gitingest .
-Ele vai gerar um arquivo chamado digest.txt na raiz do seu projeto contendo todo a estrutura e os códigos. Basta abrir esse arquivo no IntelliJ, dar um Ctrl + A e Ctrl + C!1. Usar a extensão "Gitingest" no Terminal do IntelliJ (A mais rápida 🚀)
-O Gitingest (ou ferramentas similares de CLI como code2prompt ou files-to-prompt) varre o diretório do seu projeto, respeita o .gitignore (para não pegar as pastas .idea, target ou build) e gera um único arquivo de texto com todo o código formatado.
+Ele vai gerar um arquivo chamado digest.txt na raiz do seu projeto contendo todo a estrutura e os cÃ³digos. Basta abrir esse arquivo no IntelliJ, dar um Ctrl + A e Ctrl + C!1. Usar a extensÃ£o "Gitingest" no Terminal do IntelliJ (A mais rÃ¡pida ðŸš€)
+O Gitingest (ou ferramentas similares de CLI como code2prompt ou files-to-prompt) varre o diretÃ³rio do seu projeto, respeita o .gitignore (para nÃ£o pegar as pastas .idea, target ou build) e gera um Ãºnico arquivo de texto com todo o cÃ³digo formatado.
 
 Como fazer:
-Abra o Terminal integrado do IntelliJ (Alt + F12 ou opção Terminal no rodapé).
-Se você tem o Python instalado, execute no terminal:
+Abra o Terminal integrado do IntelliJ (Alt + F12 ou opÃ§Ã£o Terminal no rodapÃ©).
+Se vocÃª tem o Python instalado, execute no terminal:
 
 Bash
 
@@ -276,7 +281,7 @@ Depois, dentro da pasta do seu projeto, rode:
 Bash
 
 gitingest .
-Ele vai gerar um arquivo chamado digest.txt na raiz do seu projeto contendo todo a estrutura e os códigos. Basta abrir esse arquivo no IntelliJ, dar um Ctrl + A e Ctrl + C!
+Ele vai gerar um arquivo chamado digest.txt na raiz do seu projeto contendo todo a estrutura e os cÃ³digos. Basta abrir esse arquivo no IntelliJ, dar um Ctrl + A e Ctrl + C!
 
 
 ================================================
@@ -894,6 +899,11 @@ FILE: pom.xml
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.8.5</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -972,6 +982,106 @@ public class TaskTrackerApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TaskTrackerApplication.class, args);
 	}
+
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/controller/TarefaController.java
+================================================
+package com.satolepsystems.task_tracker.controller;
+
+import com.satolepsystems.task_tracker.dto.tarefa.TarefaRequestDTO;
+import com.satolepsystems.task_tracker.dto.tarefa.TarefaResponseDTO;
+import com.satolepsystems.task_tracker.service.TarefaService;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/tarefas")
+@CrossOrigin(origins = "*")
+@AllArgsConstructor
+public class TarefaController {
+
+    private final TarefaService service;
+
+    @PostMapping
+    public ResponseEntity<TarefaResponseDTO> criar(@RequestBody @Valid TarefaRequestDTO dto) {
+        TarefaResponseDTO tarefaCriada = service.criar(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(tarefaCriada);
+    }
+
+    @GetMapping("usuario/{usuarioId}")
+    public ResponseEntity<List<TarefaResponseDTO>> listarPorUsuario(@PathVariable Long usuarioId) {
+        return ResponseEntity.ok(service.listaPorUsuario(usuarioId));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<TarefaResponseDTO> alterarStatusConclusao(@PathVariable Long id) {
+        return ResponseEntity.ok(service.alternarStatusConclusao(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        service.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/controller/UsuarioController.java
+================================================
+package com.satolepsystems.task_tracker.controller;
+
+import com.satolepsystems.task_tracker.dto.usuario.UsuarioRequestDTO;
+import com.satolepsystems.task_tracker.dto.usuario.UsuarioResponseDTO;
+import com.satolepsystems.task_tracker.service.UsuarioService;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/usuarios")
+@CrossOrigin(origins = "*")
+@AllArgsConstructor
+public class UsuarioController {
+
+    private final UsuarioService service;
+
+    @PostMapping
+    public ResponseEntity<UsuarioResponseDTO> criar(@RequestBody @Valid UsuarioRequestDTO dto) {
+        UsuarioResponseDTO usuarioCriado = service.criar(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioCriado);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
+        return ResponseEntity.ok(service.listarTodos());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(service.buscarPorId(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        service.deletar(id);
+        return ResponseEntity.noContent().build();
+    }
 
 }
 
@@ -1090,13 +1200,13 @@ import jakarta.validation.constraints.Size;
 
 public record TarefaRequestDTO(
 
-        @NotBlank(message = "O título é obrigatório")
-        @Size(max = 150, message = "O título deve ter no máximo 150 caracteres.")
+        @NotBlank(message = "O tÃ­tulo Ã© obrigatÃ³rio")
+        @Size(max = 150, message = "O tÃ­tulo deve ter no mÃ¡ximo 150 caracteres.")
         String titulo,
 
         String descricao,
 
-        @NotNull(message = "O ID do usuário é obrigatório.")
+        @NotNull(message = "O ID do usuÃ¡rio Ã© obrigatÃ³rio.")
         Long usuarioId
 
 ) {
@@ -1136,17 +1246,17 @@ import jakarta.validation.constraints.Size;
 
 public record UsuarioRequestDTO(
 
-        @NotBlank(message = "O nome é obrigatório.")
-        @Size(max = 100, message = "O nome deve ter no máximo 100 caracteres.")
+        @NotBlank(message = "O nome Ã© obrigatÃ³rio.")
+        @Size(max = 100, message = "O nome deve ter no mÃ¡ximo 100 caracteres.")
         String nome,
 
-        @NotBlank(message = "O email é obrigatório.")
-        @Email(message = "O formato do e-mail é inválido.")
-        @Size(max = 100, message = "O email deve ter no máximo 100 caracteres.")
+        @NotBlank(message = "O email Ã© obrigatÃ³rio.")
+        @Email(message = "O formato do e-mail Ã© invÃ¡lido.")
+        @Size(max = 100, message = "O email deve ter no mÃ¡ximo 100 caracteres.")
         String email,
 
-        @NotBlank(message = "A senha é obrigatória.")
-        @Size(min = 6, message = "A senha deve ter no mínimo 6 caracteres.")
+        @NotBlank(message = "A senha Ã© obrigatÃ³ria.")
+        @Size(min = 6, message = "A senha deve ter no mÃ­nimo 6 caracteres.")
         String senha
 
 ) {
@@ -1169,6 +1279,28 @@ public record UsuarioResponseDTO(
         LocalDateTime dataCriacao
 
 ) {
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastucture/config/SwaggerConfig.java
+================================================
+package com.satolepsystems.task_tracker.infrastucture.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+
+public class SwaggerConfig {
+
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Task Tracker API")
+                        .version("1.0.0")
+                        .description("API REST para gerenciamento de tarefas e usuÃ¡rios."));
+    }
+
 }
 
 
@@ -1206,7 +1338,7 @@ public class GlobalExceptionHandler {
 
         ProblemDetailDTO problem = new ProblemDetailDTO(
                 HttpStatus.NOT_FOUND.value(),
-                "Recurso não encontrado.",
+                "Recurso nÃ£o encontrado.",
                 exception.getMessage(),
                 LocalDateTime.now()
         );
@@ -1220,7 +1352,7 @@ public class GlobalExceptionHandler {
 
         ProblemDetailDTO problem = new ProblemDetailDTO(
                 HttpStatus.BAD_REQUEST.value(),
-                "Regra de negócio violada.",
+                "Regra de negÃ³cio violada.",
                 exception.getMessage(),
                 LocalDateTime.now()
         );
@@ -1413,7 +1545,7 @@ public class TarefaService {
     public TarefaResponseDTO criar(TarefaRequestDTO dto) {
 
         Usuario usuario = usuarioRepository.findById(dto.usuarioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + dto.usuarioId()));
+                .orElseThrow(() -> new ResourceNotFoundException("UsuÃ¡rio nÃ£o encontrado com o ID: " + dto.usuarioId()));
 
         Tarefa tarefa = mapper.toEntity(dto);
         tarefa.setUsuario(usuario);
@@ -1428,7 +1560,7 @@ public class TarefaService {
     public List<TarefaResponseDTO> listaPorUsuario(Long usuarioId) {
 
         if (!usuarioRepository.existsById(usuarioId)) {
-            throw new ResourceNotFoundException("Usuário não encontrado com o ID: " + usuarioId);
+            throw new ResourceNotFoundException("UsuÃ¡rio nÃ£o encontrado com o ID: " + usuarioId);
         }
 
         return tarefaRepository.findByUsuarioId(usuarioId)
@@ -1442,7 +1574,7 @@ public class TarefaService {
     public TarefaResponseDTO alternarStatusConclusao(Long id) {
 
         Tarefa tarefa = tarefaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada com o ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Tarefa nÃ£o encontrada com o ID: " + id));
 
         tarefa.setConcluida(!tarefa.getConcluida());
 
@@ -1454,7 +1586,7 @@ public class TarefaService {
     public void deletar(Long id) {
 
         if (!tarefaRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Tarefa não encontrada com o ID: " + id);
+            throw new ResourceNotFoundException("Tarefa nÃ£o encontrada com o ID: " + id);
         }
 
         tarefaRepository.deleteById(id);
@@ -1496,7 +1628,7 @@ public class UsuarioService {
     public UsuarioResponseDTO criar(UsuarioRequestDTO dto) {
 
         if (repository.existsByEmail(dto.email())) {
-            throw new BusinessException("Já existe um usuário cadastrado com o e-mail: " + dto.email());
+            throw new BusinessException("JÃ¡ existe um usuÃ¡rio cadastrado com o e-mail: " + dto.email());
         }
 
         Usuario usuario = mapper.toEntity(dto);
@@ -1520,7 +1652,7 @@ public class UsuarioService {
     public UsuarioResponseDTO buscarPorId(Long id) {
 
         Usuario usuario = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("UsuÃ¡rio nÃ£o encontrado com o ID: " + id));
 
         return mapper.toDTO(usuario);
 
@@ -1530,7 +1662,7 @@ public class UsuarioService {
     public void deletar(Long id) {
 
         if (!repository.existsById(id)) {
-            throw new ResourceNotFoundException("Usuário não encontrado com o ID: " + id);
+            throw new ResourceNotFoundException("UsuÃ¡rio nÃ£o encontrado com o ID: " + id);
         }
 
         repository.deleteById(id);
@@ -1568,6 +1700,12 @@ spring:
         format_sql: true
     open-in-view: false
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+  api-docs:
+    path: /v3/api-docs
 
 
 ================================================

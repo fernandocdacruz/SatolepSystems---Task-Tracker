@@ -21,3 +21,10 @@ spring:
       hibernate:
         format_sql: true
     open-in-view: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+  api-docs:
+    path: /v3/api-docs
