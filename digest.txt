@@ -994,7 +994,14 @@ package com.satolepsystems.task_tracker.controller;
 
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaRequestDTO;
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaResponseDTO;
+import com.satolepsystems.task_tracker.infrastucture.exceptions.ProblemDetailDTO;
 import com.satolepsystems.task_tracker.service.TarefaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -1007,32 +1014,58 @@ import java.util.List;
 @RequestMapping("/tarefas")
 @CrossOrigin(origins = "*")
 @AllArgsConstructor
+@Tag(name = "Tarefas", description = "Endpoints para gerenciamento de tarefas")
 public class TarefaController {
 
     private final TarefaService service;
 
+    @Operation(summary = "Criar tarefa", description = "Cria uma nova tarefa associada a um usuÃ¡rio existente.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Tarefa criada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados da requisiÃ§Ã£o invÃ¡lidos",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class))),
+            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio informado nÃ£o existe",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
     @PostMapping
     public ResponseEntity<TarefaResponseDTO> criar(@RequestBody @Valid TarefaRequestDTO dto) {
         TarefaResponseDTO tarefaCriada = service.criar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(tarefaCriada);
     }
 
-    @GetMapping("usuario/{usuarioId}")
+    @Operation(summary = "Listar tarefas por usuÃ¡rio", description = "Retorna todas as tarefas pertencentes a um determinado usuÃ¡rio.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de tarefas retornada com sucesso"),
+            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio informado nÃ£o encontrado",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
+    @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<TarefaResponseDTO>> listarPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(service.listaPorUsuario(usuarioId));
     }
 
+    @Operation(summary = "Alternar status de conclusÃ£o", description = "Inverte o estado do atributo 'concluida' (true/false) de uma tarefa.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Status alterado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Tarefa nÃ£o encontrada",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
     @PatchMapping("/{id}/status")
     public ResponseEntity<TarefaResponseDTO> alterarStatusConclusao(@PathVariable Long id) {
         return ResponseEntity.ok(service.alternarStatusConclusao(id));
     }
 
+    @Operation(summary = "Deletar tarefa", description = "Remove uma tarefa do sistema pelo seu ID.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Tarefa removida com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Tarefa nÃ£o encontrada",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
         return ResponseEntity.noContent().build();
     }
-
 }
 
 
@@ -1044,7 +1077,14 @@ package com.satolepsystems.task_tracker.controller;
 
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioRequestDTO;
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioResponseDTO;
+import com.satolepsystems.task_tracker.infrastucture.exceptions.ProblemDetailDTO;
 import com.satolepsystems.task_tracker.service.UsuarioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -1057,26 +1097,49 @@ import java.util.List;
 @RequestMapping("/usuarios")
 @CrossOrigin(origins = "*")
 @AllArgsConstructor
+@Tag(name = "UsuÃ¡rios", description = "Endpoints para gerenciamento de usuÃ¡rios do sistema")
 public class UsuarioController {
 
     private final UsuarioService service;
 
+    @Operation(summary = "Criar usuÃ¡rio", description = "Cadastra um novo usuÃ¡rio com e-mail Ãºnico.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "UsuÃ¡rio criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados invÃ¡lidos ou e-mail jÃ¡ cadastrado",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
     @PostMapping
     public ResponseEntity<UsuarioResponseDTO> criar(@RequestBody @Valid UsuarioRequestDTO dto) {
         UsuarioResponseDTO usuarioCriado = service.criar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioCriado);
     }
 
+    @Operation(summary = "Listar todos os usuÃ¡rios", description = "Retorna uma lista com todos os usuÃ¡rios cadastrados.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso")
+    })
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
         return ResponseEntity.ok(service.listarTodos());
     }
 
+    @Operation(summary = "Buscar usuÃ¡rio por ID", description = "Retorna um usuÃ¡rio especÃ­fico com base no ID fornecido.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "UsuÃ¡rio encontrado"),
+            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio nÃ£o encontrado",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
 
+    @Operation(summary = "Deletar usuÃ¡rio", description = "Remove um usuÃ¡rio e todas as suas tarefas vinculadas.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "UsuÃ¡rio removido com sucesso"),
+            @ApiResponse(responseCode = "404", description = "UsuÃ¡rio nÃ£o encontrado",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);
@@ -1194,18 +1257,22 @@ FILE: src/main/java/com/satolepsystems/task_tracker/dto/tarefa/TarefaRequestDTO.
 ================================================
 package com.satolepsystems.task_tracker.dto.tarefa;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record TarefaRequestDTO(
 
+        @Schema(description = "TÃ­tulo da tarefa", example = "Configurar Swagger na API")
         @NotBlank(message = "O tÃ­tulo Ã© obrigatÃ³rio")
         @Size(max = 150, message = "O tÃ­tulo deve ter no mÃ¡ximo 150 caracteres.")
         String titulo,
 
+        @Schema(description = "DescriÃ§Ã£o detalhada da tarefa", example = "Mapear endpoints com anotaÃ§Ãµes do OpenAPI")
         String descricao,
 
+        @Schema(description = "ID do usuÃ¡rio associado Ã  tarefa", example = "1")
         @NotNull(message = "O ID do usuÃ¡rio Ã© obrigatÃ³rio.")
         Long usuarioId
 
@@ -1219,15 +1286,28 @@ FILE: src/main/java/com/satolepsystems/task_tracker/dto/tarefa/TarefaResponseDTO
 ================================================
 package com.satolepsystems.task_tracker.dto.tarefa;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDateTime;
 
 public record TarefaResponseDTO(
 
+        @Schema(description = "Identificador Ãºnico da tarefa.", example = "10")
         Long id,
+
+        @Schema(description = "TÃ­tulo da tarefa.", example = "Configurar Swagger na API")
         String titulo,
+
+        @Schema(description = "DescriÃ§Ã£o detalhada da tarefa.", example = "Mapear endpoints com anotaÃ§Ãµes do OpenAPI")
         String descricao,
+
+        @Schema(description = "Indica se a tarefa estÃ¡ concluÃ­da.", example = "false")
         Boolean concluida,
+
+        @Schema(description = "Data e hora de criaÃ§Ã£o da tarefa.", example = "2026-08-23T20:00:00")
         LocalDateTime dataCriacao,
+
+        @Schema(description = "ID do usuÃ¡rio associado.", example = "1")
         Long usuarioId
 
 ) {
@@ -1240,21 +1320,26 @@ FILE: src/main/java/com/satolepsystems/task_tracker/dto/usuario/UsuarioRequestDT
 ================================================
 package com.satolepsystems.task_tracker.dto.usuario;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+@Schema(description = "Payload para a criaÃ§Ã£o de um novo usuÃ¡rio.")
 public record UsuarioRequestDTO(
 
+        @Schema(description = "Nome completo do usuÃ¡rio", example = "Fernando Cruz")
         @NotBlank(message = "O nome Ã© obrigatÃ³rio.")
         @Size(max = 100, message = "O nome deve ter no mÃ¡ximo 100 caracteres.")
         String nome,
 
+        @Schema(description = "E-mail de acesso do usuÃ¡rio.", example = "fernando@exemplo.com")
         @NotBlank(message = "O email Ã© obrigatÃ³rio.")
         @Email(message = "O formato do e-mail Ã© invÃ¡lido.")
         @Size(max = 100, message = "O email deve ter no mÃ¡ximo 100 caracteres.")
         String email,
 
+        @Schema(description = "Senha de acesso do usuÃ¡rio", example = "senhaSegura123")
         @NotBlank(message = "A senha Ã© obrigatÃ³ria.")
         @Size(min = 6, message = "A senha deve ter no mÃ­nimo 6 caracteres.")
         String senha
@@ -1269,13 +1354,23 @@ FILE: src/main/java/com/satolepsystems/task_tracker/dto/usuario/UsuarioResponseD
 ================================================
 package com.satolepsystems.task_tracker.dto.usuario;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDateTime;
 
+@Schema(description = "Dados de resposta do usuÃ¡rio.")
 public record UsuarioResponseDTO(
 
+        @Schema(description = "Identificador Ãºnico do usuÃ¡rio", example = "1")
         Long id,
+
+        @Schema(description = "Nome do usuÃ¡rio", example = "Fernando Cruz")
         String nome,
+
+        @Schema(description = "E-mail do usuÃ¡rio", example = "fernando@exemplo.com")
         String email,
+
+        @Schema(description = "Data e hora de criaÃ§Ã£o do cadastro", example = "2026-08-23T19:30:00")
         LocalDateTime dataCriacao
 
 ) {
@@ -1289,16 +1384,28 @@ FILE: src/main/java/com/satolepsystems/task_tracker/infrastucture/config/Swagger
 package com.satolepsystems.task_tracker.infrastucture.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
+@Configuration
 public class SwaggerConfig {
 
+    @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
                         .title("Task Tracker API")
                         .version("1.0.0")
-                        .description("API REST para gerenciamento de tarefas e usuÃ¡rios."));
+                        .description("API REST para gerenciamento de tarefas e usuÃ¡rios.")
+                        .contact(new Contact()
+                                .name("Satolep Systems")
+                                .email("suporte@satolepsystems.com"))
+                        .license(new License()
+                                .name("MIT License")
+                                .url("https://opensource.org/licenses/MIT")));
     }
 
 }
