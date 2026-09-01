@@ -33,6 +33,7 @@ services:
       DB_NAME: task_tracker_db_001
       DB_USER: postgres
       DB_PASSWORD: postgres
+      JWT_SECRET: minhachavesegura123_troque_em_producao_123456
     depends_on:
       postgres-db:
         condition: service_healthy

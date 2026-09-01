@@ -4,7 +4,7 @@ import com.satolepsystems.task_tracker.domain.Tarefa;
 import com.satolepsystems.task_tracker.domain.Usuario;
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaRequestDTO;
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaResponseDTO;
-import com.satolepsystems.task_tracker.infrastucture.exceptions.ResourceNotFoundException;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.ResourceNotFoundException;
 import com.satolepsystems.task_tracker.mapper.TarefaMapper;
 import com.satolepsystems.task_tracker.repository.TarefaRepository;
 import com.satolepsystems.task_tracker.repository.UsuarioRepository;

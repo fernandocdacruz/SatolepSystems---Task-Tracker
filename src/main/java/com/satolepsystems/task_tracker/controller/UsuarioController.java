@@ -2,7 +2,7 @@ package com.satolepsystems.task_tracker.controller;
 
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioRequestDTO;
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioResponseDTO;
-import com.satolepsystems.task_tracker.infrastucture.exceptions.ProblemDetailDTO;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.ProblemDetailDTO;
 import com.satolepsystems.task_tracker.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,18 +26,6 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService service;
-
-    @Operation(summary = "Criar usuário", description = "Cadastra um novo usuário com e-mail único.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Usuário criado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos ou e-mail já cadastrado",
-                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
-    })
-    @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> criar(@RequestBody @Valid UsuarioRequestDTO dto) {
-        UsuarioResponseDTO usuarioCriado = service.criar(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioCriado);
-    }
 
     @Operation(summary = "Listar todos os usuários", description = "Retorna uma lista com todos os usuários cadastrados.")
     @ApiResponses({

@@ -1,4 +1,4 @@
-package com.satolepsystems.task_tracker.infrastucture.exceptions;
+package com.satolepsystems.task_tracker.infrastructure.exceptions;
 
 import java.time.LocalDateTime;
 

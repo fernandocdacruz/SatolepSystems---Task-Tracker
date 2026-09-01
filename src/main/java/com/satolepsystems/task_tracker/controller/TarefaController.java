@@ -2,7 +2,7 @@ package com.satolepsystems.task_tracker.controller;
 
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaRequestDTO;
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaResponseDTO;
-import com.satolepsystems.task_tracker.infrastucture.exceptions.ProblemDetailDTO;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.ProblemDetailDTO;
 import com.satolepsystems.task_tracker.service.TarefaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

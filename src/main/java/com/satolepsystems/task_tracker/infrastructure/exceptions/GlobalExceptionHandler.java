@@ -1,4 +1,4 @@
-package com.satolepsystems.task_tracker.infrastucture.exceptions;
+package com.satolepsystems.task_tracker.infrastructure.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +35,20 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+
+    }
+
+    @ExceptionHandler(TokenGenerationException.class)
+    public ResponseEntity<ProblemDetailDTO> handTokenGeneration(TokenGenerationException exception) {
+
+        ProblemDetailDTO problem = new ProblemDetailDTO(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Erro interno ao gerar o token de acesso.",
+                exception.getMessage(),
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
 
     }
 

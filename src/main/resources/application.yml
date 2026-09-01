@@ -28,3 +28,8 @@ springdoc:
     operationsSorter: method
   api-docs:
     path: /v3/api-docs
+
+api:
+  security:
+    token:
+      secret: ${JWT_SECRET:minhachavesegura123_troque_em_producao_123456}

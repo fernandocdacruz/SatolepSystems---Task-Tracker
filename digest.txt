@@ -17,26 +17,38 @@ Directory structure:
     │   │   │           └── task_tracker/
     │   │   │               ├── TaskTrackerApplication.java
     │   │   │               ├── controller/
+    │   │   │               │   ├── AuthenticationController.java
     │   │   │               │   ├── TarefaController.java
     │   │   │               │   └── UsuarioController.java
     │   │   │               ├── domain/
     │   │   │               │   ├── Tarefa.java
-    │   │   │               │   └── Usuario.java
+    │   │   │               │   ├── Usuario.java
+    │   │   │               │   └── enums/
+    │   │   │               │       └── UserRole.java
     │   │   │               ├── dto/
+    │   │   │               │   ├── auth/
+    │   │   │               │   │   ├── AuthenticationDTO.java
+    │   │   │               │   │   ├── LoginResponseDTO.java
+    │   │   │               │   │   └── RegisterDTO.java
     │   │   │               │   ├── tarefa/
     │   │   │               │   │   ├── TarefaRequestDTO.java
     │   │   │               │   │   └── TarefaResponseDTO.java
     │   │   │               │   └── usuario/
     │   │   │               │       ├── UsuarioRequestDTO.java
     │   │   │               │       └── UsuarioResponseDTO.java
-    │   │   │               ├── infrastucture/
+    │   │   │               ├── infrastructure/
     │   │   │               │   ├── config/
     │   │   │               │   │   └── SwaggerConfig.java
-    │   │   │               │   └── exceptions/
-    │   │   │               │       ├── BusinessException.java
-    │   │   │               │       ├── GlobalExceptionHandler.java
-    │   │   │               │       ├── ProblemDetailDTO.java
-    │   │   │               │       └── ResourceNotFoundException.java
+    │   │   │               │   ├── exceptions/
+    │   │   │               │   │   ├── BusinessException.java
+    │   │   │               │   │   ├── GlobalExceptionHandler.java
+    │   │   │               │   │   ├── ProblemDetailDTO.java
+    │   │   │               │   │   ├── ResourceNotFoundException.java
+    │   │   │               │   │   └── TokenGenerationException.java
+    │   │   │               │   └── security/
+    │   │   │               │       ├── SecurityConfigurations.java
+    │   │   │               │       ├── SecurityFilter.java
+    │   │   │               │       └── TokenService.java
     │   │   │               ├── mapper/
     │   │   │               │   ├── TarefaMapper.java
     │   │   │               │   └── UsuarioMapper.java
@@ -44,13 +56,16 @@ Directory structure:
     │   │   │               │   ├── TarefaRepository.java
     │   │   │               │   └── UsuarioRepository.java
     │   │   │               └── service/
+    │   │   │                   ├── AuthorizationService.java
+    │   │   │                   ├── AuthService.java
     │   │   │                   ├── TarefaService.java
     │   │   │                   └── UsuarioService.java
     │   │   └── resources/
     │   │       ├── application.yml
     │   │       └── db/
     │   │           └── migration/
-    │   │               └── V1__create_tables.sql
+    │   │               ├── V1__create_tables.sql
+    │   │               └── V2__add_role_to_usuarios.sql
     │   └── test/
     │       └── java/
     │           └── com/
@@ -99,6 +114,7 @@ services:
       DB_NAME: task_tracker_db_001
       DB_USER: postgres
       DB_PASSWORD: postgres
+      JWT_SECRET: minhachavesegura123_troque_em_producao_123456
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -812,35 +828,24 @@ FILE: pom.xml
 ================================================
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.0</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<version>3.3.3</version>
+		<relativePath/>
 	</parent>
 	<groupId>com.satolepsystems</groupId>
 	<artifactId>task_tracker</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+	<name>task_tracker</name>
+	<description>Task Tracker Service</description>
+
 	<properties>
 		<java.version>17</java.version>
 	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -848,7 +853,7 @@ FILE: pom.xml
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-flyway</artifactId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -856,11 +861,32 @@ FILE: pom.xml
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.auth0</groupId>
+			<artifactId>java-jwt</artifactId>
+			<version>4.4.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.6.0</version>
 		</dependency>
 
 		<dependency>
@@ -870,39 +896,20 @@ FILE: pom.xml
 			<optional>true</optional>
 		</dependency>
 		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-flyway-test</artifactId>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.8.5</version>
 		</dependency>
 	</dependencies>
 
@@ -911,48 +918,19 @@ FILE: pom.xml
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>default-compile</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-						<configuration>
-							<annotationProcessorPaths>
-								<path>
-									<groupId>org.projectlombok</groupId>
-									<artifactId>lombok</artifactId>
-								</path>
-							</annotationProcessorPaths>
-						</configuration>
-					</execution>
-					<execution>
-						<id>default-testCompile</id>
-						<phase>test-compile</phase>
-						<goals>
-							<goal>testCompile</goal>
-						</goals>
-						<configuration>
-							<annotationProcessorPaths>
-								<path>
-									<groupId>org.projectlombok</groupId>
-									<artifactId>lombok</artifactId>
-								</path>
-							</annotationProcessorPaths>
-						</configuration>
-					</execution>
-				</executions>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
 
 </project>
-
 
 
 ================================================
@@ -988,13 +966,78 @@ public class TaskTrackerApplication {
 
 
 ================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/controller/AuthenticationController.java
+================================================
+package com.satolepsystems.task_tracker.controller;
+
+import com.satolepsystems.task_tracker.dto.auth.AuthenticationDTO;
+import com.satolepsystems.task_tracker.dto.auth.LoginResponseDTO;
+import com.satolepsystems.task_tracker.dto.auth.RegisterDTO;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.ProblemDetailDTO;
+import com.satolepsystems.task_tracker.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/auth")
+@CrossOrigin(origins = "x")
+@RequiredArgsConstructor
+@Tag(name = "AutenticaÃ§Ã£o", description = "Endpoints para login e registro de usuÃ¡rios")
+public class AuthenticationController {
+
+    private final AuthService authService;
+
+    @Operation(summary = "Realizar Login", description = "Autentica o usuÃ¡rio e retorna o token JWT.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Autenticado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Credenciais invÃ¡lidas ou requisiÃ§Ã£o incorreta",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid AuthenticationDTO dto) {
+
+        LoginResponseDTO response = authService.login(dto);
+
+        return ResponseEntity.ok(response);
+
+    }
+
+    @Operation(summary = "Registrar novo usuÃ¡rio", description = "Cadastra um novo usuÃ¡rio no sistema.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "UsuÃ¡rio cadastrado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados invÃ¡lidos ou e-mail jÃ¡ existente",
+                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
+    })
+    @PostMapping("/register")
+    public ResponseEntity<Void> register(@RequestBody @Valid RegisterDTO dto) {
+
+        authService.register(dto);
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+
+    }
+
+}
+
+
+
+================================================
 FILE: src/main/java/com/satolepsystems/task_tracker/controller/TarefaController.java
 ================================================
 package com.satolepsystems.task_tracker.controller;
 
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaRequestDTO;
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaResponseDTO;
-import com.satolepsystems.task_tracker.infrastucture.exceptions.ProblemDetailDTO;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.ProblemDetailDTO;
 import com.satolepsystems.task_tracker.service.TarefaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -1077,7 +1120,7 @@ package com.satolepsystems.task_tracker.controller;
 
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioRequestDTO;
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioResponseDTO;
-import com.satolepsystems.task_tracker.infrastucture.exceptions.ProblemDetailDTO;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.ProblemDetailDTO;
 import com.satolepsystems.task_tracker.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -1101,18 +1144,6 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService service;
-
-    @Operation(summary = "Criar usuÃ¡rio", description = "Cadastra um novo usuÃ¡rio com e-mail Ãºnico.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "UsuÃ¡rio criado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados invÃ¡lidos ou e-mail jÃ¡ cadastrado",
-                    content = @Content(schema = @Schema(implementation = ProblemDetailDTO.class)))
-    })
-    @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> criar(@RequestBody @Valid UsuarioRequestDTO dto) {
-        UsuarioResponseDTO usuarioCriado = service.criar(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioCriado);
-    }
 
     @Operation(summary = "Listar todos os usuÃ¡rios", description = "Retorna uma lista com todos os usuÃ¡rios cadastrados.")
     @ApiResponses({
@@ -1207,11 +1238,17 @@ FILE: src/main/java/com/satolepsystems/task_tracker/domain/Usuario.java
 ================================================
 package com.satolepsystems.task_tracker.domain;
 
+import com.satolepsystems.task_tracker.domain.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Entity
@@ -1222,7 +1259,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(of = "id")
-public class Usuario {
+public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -1248,6 +1285,142 @@ public class Usuario {
         this.dataCriacao = LocalDateTime.now();
     }
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserRole role;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (this.role == UserRole.ADMIN) {
+            return List.of(
+                new SimpleGrantedAuthority("ROLE_ADMIN"),
+                new SimpleGrantedAuthority("ROLE_USER")
+            );
+        } else {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+    }
+
+    @Override
+    public String getPassword() {
+        return this.senha;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return UserDetails.super.isAccountNonExpired();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return UserDetails.super.isAccountNonLocked();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return UserDetails.super.isCredentialsNonExpired();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return UserDetails.super.isEnabled();
+    }
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/domain/enums/UserRole.java
+================================================
+package com.satolepsystems.task_tracker.domain.enums;
+
+public enum UserRole {
+
+    ADMIN("ROLE_ADMIN"),
+    USER("ROLE_USER");
+
+    private String role;
+
+    UserRole(String role) {
+        this.role = role;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/dto/auth/AuthenticationDTO.java
+================================================
+package com.satolepsystems.task_tracker.dto.auth;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record AuthenticationDTO(
+
+        @NotBlank(message = "O e-mail Ã© obrigatÃ³rio.")
+        String email,
+
+        @NotBlank(message = "A senha Ã© obrigatÃ³ria.")
+        String senha
+
+) {
+
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/dto/auth/LoginResponseDTO.java
+================================================
+package com.satolepsystems.task_tracker.dto.auth;
+
+public record LoginResponseDTO(
+
+        String token
+
+) {
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/dto/auth/RegisterDTO.java
+================================================
+package com.satolepsystems.task_tracker.dto.auth;
+
+import com.satolepsystems.task_tracker.domain.enums.UserRole;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record RegisterDTO(
+
+        @NotBlank(message = "O nome Ã© obrigatÃ³rio.")
+        @Size(max = 100)
+        String nome,
+
+        @NotBlank(message =  "O e-mail Ã© obrigatÃ³rio.")
+        @Email
+        @Size(max = 100)
+        String email,
+
+        @NotBlank(message = "A senha Ã© obrigatÃ³ria.")
+        @Size(min = 6)
+        String senha,
+
+        UserRole role
+
+) {
 }
 
 
@@ -1379,14 +1552,17 @@ public record UsuarioResponseDTO(
 
 
 ================================================
-FILE: src/main/java/com/satolepsystems/task_tracker/infrastucture/config/SwaggerConfig.java
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/config/SwaggerConfig.java
 ================================================
-package com.satolepsystems.task_tracker.infrastucture.config;
+package com.satolepsystems.task_tracker.infrastructure.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -1395,7 +1571,17 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
+        final String securitySchemeName = "bearerAuth";
+
         return new OpenAPI()
+                .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
+                .components(new Components()
+                        .addSecuritySchemes(securitySchemeName,
+                                new SecurityScheme()
+                                        .name(securitySchemeName)
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")))
                 .info(new Info()
                         .title("Task Tracker API")
                         .version("1.0.0")
@@ -1407,15 +1593,14 @@ public class SwaggerConfig {
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")));
     }
-
 }
 
 
 
 ================================================
-FILE: src/main/java/com/satolepsystems/task_tracker/infrastucture/exceptions/BusinessException.java
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/exceptions/BusinessException.java
 ================================================
-package com.satolepsystems.task_tracker.infrastucture.exceptions;
+package com.satolepsystems.task_tracker.infrastructure.exceptions;
 
 public class BusinessException extends RuntimeException {
     public BusinessException(String message) {
@@ -1426,9 +1611,9 @@ public class BusinessException extends RuntimeException {
 
 
 ================================================
-FILE: src/main/java/com/satolepsystems/task_tracker/infrastucture/exceptions/GlobalExceptionHandler.java
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/exceptions/GlobalExceptionHandler.java
 ================================================
-package com.satolepsystems.task_tracker.infrastucture.exceptions;
+package com.satolepsystems.task_tracker.infrastructure.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -1468,14 +1653,28 @@ public class GlobalExceptionHandler {
 
     }
 
+    @ExceptionHandler(TokenGenerationException.class)
+    public ResponseEntity<ProblemDetailDTO> handTokenGeneration(TokenGenerationException exception) {
+
+        ProblemDetailDTO problem = new ProblemDetailDTO(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Erro interno ao gerar o token de acesso.",
+                exception.getMessage(),
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
+
+    }
+
 }
 
 
 
 ================================================
-FILE: src/main/java/com/satolepsystems/task_tracker/infrastucture/exceptions/ProblemDetailDTO.java
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/exceptions/ProblemDetailDTO.java
 ================================================
-package com.satolepsystems.task_tracker.infrastucture.exceptions;
+package com.satolepsystems.task_tracker.infrastructure.exceptions;
 
 import java.time.LocalDateTime;
 
@@ -1495,14 +1694,227 @@ public record ProblemDetailDTO(
 
 
 ================================================
-FILE: src/main/java/com/satolepsystems/task_tracker/infrastucture/exceptions/ResourceNotFoundException.java
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/exceptions/ResourceNotFoundException.java
 ================================================
-package com.satolepsystems.task_tracker.infrastucture.exceptions;
+package com.satolepsystems.task_tracker.infrastructure.exceptions;
 
 public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String message) {
         super(message);
     }
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/exceptions/TokenGenerationException.java
+================================================
+package com.satolepsystems.task_tracker.infrastructure.exceptions;
+
+public class TokenGenerationException extends RuntimeException {
+    public TokenGenerationException(String message) {
+        super(message);
+    }
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/security/SecurityConfigurations.java
+================================================
+package com.satolepsystems.task_tracker.infrastructure.security;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+public class SecurityConfigurations {
+
+    private final SecurityFilter securityFilter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/usuarios").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/usuarios/**").hasRole("ADMIN")
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/security/SecurityFilter.java
+================================================
+package com.satolepsystems.task_tracker.infrastructure.security;
+
+import com.satolepsystems.task_tracker.domain.Usuario;
+import com.satolepsystems.task_tracker.repository.UsuarioRepository;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.Optional;
+
+@Component
+@RequiredArgsConstructor
+public class SecurityFilter extends OncePerRequestFilter {
+
+    private final TokenService service;
+    private final UsuarioRepository repository;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+        var token = this.recoverToken(request);
+
+        if (token != null) {
+
+            var login = service.validateToken(token);
+
+            Optional<Usuario> usuarioOptional = repository.findByEmail(login);
+
+            if (usuarioOptional.isPresent()) {
+
+                UserDetails usuario = usuarioOptional.get();
+
+                var authentication = new UsernamePasswordAuthenticationToken(
+                        usuario,
+                        null,
+                        usuario.getAuthorities()
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            }
+
+        }
+
+        filterChain.doFilter(request, response);
+
+    }
+
+    private String recoverToken(HttpServletRequest request) {
+
+        var authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+
+        return authHeader.replace("Bearer ", "").trim();
+
+    }
+
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/security/TokenService.java
+================================================
+package com.satolepsystems.task_tracker.infrastructure.security;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTCreationException;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.satolepsystems.task_tracker.domain.Usuario;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.TokenGenerationException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
+@Service
+public class TokenService {
+
+    @Value("${api.security.token.secret}")
+    private String secret;
+
+    public String generateToken(Usuario usuario) {
+
+        try {
+
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+
+            String token = JWT.create()
+                    .withIssuer("task-tracker-api")
+                    .withSubject(usuario.getEmail())
+                    .withExpiresAt(getExpirationDate())
+                    .sign(algorithm);
+            return token;
+
+        } catch (JWTCreationException exception) {
+            throw new TokenGenerationException("Erro interno ao gerar o token de acesso.");
+        }
+
+    }
+
+    public String validateToken(String token) {
+
+        try {
+
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+
+            return JWT.require(algorithm)
+                    .withIssuer("task-tracker-api")
+                    .build()
+                    .verify(token)
+                    .getSubject();
+
+        } catch (JWTVerificationException exception) {
+            return "";
+        }
+
+    }
+
+    private Instant getExpirationDate() {
+        return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
+    }
+
 }
 
 
@@ -1549,6 +1961,8 @@ FILE: src/main/java/com/satolepsystems/task_tracker/mapper/UsuarioMapper.java
 package com.satolepsystems.task_tracker.mapper;
 
 import com.satolepsystems.task_tracker.domain.Usuario;
+import com.satolepsystems.task_tracker.domain.enums.UserRole;
+import com.satolepsystems.task_tracker.dto.auth.RegisterDTO;
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioRequestDTO;
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioResponseDTO;
 import org.springframework.stereotype.Component;
@@ -1562,6 +1976,19 @@ public class UsuarioMapper {
                 .email(dto.email())
                 .senha(dto.senha())
                 .build();
+    }
+
+    public Usuario toEntity(RegisterDTO dto, String encryptedPassword) {
+
+        UserRole userRole = dto.role() != null ? dto.role() : UserRole.USER;
+
+        return Usuario.builder()
+                .nome(dto.nome())
+                .email(dto.email())
+                .senha(encryptedPassword)
+                .role(userRole)
+                .build();
+
     }
 
     public UsuarioResponseDTO toDTO(Usuario usuario) {
@@ -1606,6 +2033,7 @@ package com.satolepsystems.task_tracker.repository;
 
 import com.satolepsystems.task_tracker.domain.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -1622,6 +2050,94 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
 
 ================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/service/AuthorizationService.java
+================================================
+package com.satolepsystems.task_tracker.service;
+
+import com.satolepsystems.task_tracker.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class AuthorizationService implements UserDetailsService  {
+
+    private final UsuarioRepository usuarioRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return usuarioRepository.findByEmail(username).
+                orElseThrow(() -> new UsernameNotFoundException("UsuÃ¡rio nÃ£o encontrado: " + username));
+    }
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/service/AuthService.java
+================================================
+package com.satolepsystems.task_tracker.service;
+
+import com.satolepsystems.task_tracker.domain.Usuario;
+import com.satolepsystems.task_tracker.dto.auth.AuthenticationDTO;
+import com.satolepsystems.task_tracker.dto.auth.LoginResponseDTO;
+import com.satolepsystems.task_tracker.dto.auth.RegisterDTO;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.BusinessException;
+import com.satolepsystems.task_tracker.infrastructure.security.TokenService;
+import com.satolepsystems.task_tracker.mapper.UsuarioMapper;
+import com.satolepsystems.task_tracker.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final AuthenticationManager authenticationManager;
+    private final UsuarioRepository usuarioRepository;
+    private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
+    private final UsuarioMapper usuarioMapper;
+
+    public LoginResponseDTO login(AuthenticationDTO dto) {
+
+        var usernamePassword = new UsernamePasswordAuthenticationToken(dto.email(), dto.senha());
+
+        var auth = this.authenticationManager.authenticate(usernamePassword);
+
+        var token = tokenService.generateToken((Usuario) auth.getPrincipal());
+
+        return new LoginResponseDTO(token);
+
+    }
+
+    @Transactional
+    public void register(RegisterDTO dto) {
+
+        if (this.usuarioRepository.findByEmail(dto.email()).isPresent()) {
+            throw new BusinessException("JÃ¡ existe um usuÃ¡rio cadastrado com este e-mail.");
+        }
+
+        String encryptedPassword = passwordEncoder.encode(dto.senha());
+
+        Usuario novoUsuario = usuarioMapper.toEntity(dto, encryptedPassword);
+
+        this.usuarioRepository.save(novoUsuario);
+
+    }
+
+}
+
+
+
+================================================
 FILE: src/main/java/com/satolepsystems/task_tracker/service/TarefaService.java
 ================================================
 package com.satolepsystems.task_tracker.service;
@@ -1630,7 +2146,7 @@ import com.satolepsystems.task_tracker.domain.Tarefa;
 import com.satolepsystems.task_tracker.domain.Usuario;
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaRequestDTO;
 import com.satolepsystems.task_tracker.dto.tarefa.TarefaResponseDTO;
-import com.satolepsystems.task_tracker.infrastucture.exceptions.ResourceNotFoundException;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.ResourceNotFoundException;
 import com.satolepsystems.task_tracker.mapper.TarefaMapper;
 import com.satolepsystems.task_tracker.repository.TarefaRepository;
 import com.satolepsystems.task_tracker.repository.UsuarioRepository;
@@ -1712,13 +2228,15 @@ FILE: src/main/java/com/satolepsystems/task_tracker/service/UsuarioService.java
 package com.satolepsystems.task_tracker.service;
 
 import com.satolepsystems.task_tracker.domain.Usuario;
+import com.satolepsystems.task_tracker.domain.enums.UserRole;
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioRequestDTO;
 import com.satolepsystems.task_tracker.dto.usuario.UsuarioResponseDTO;
-import com.satolepsystems.task_tracker.infrastucture.exceptions.BusinessException;
-import com.satolepsystems.task_tracker.infrastucture.exceptions.ResourceNotFoundException;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.BusinessException;
+import com.satolepsystems.task_tracker.infrastructure.exceptions.ResourceNotFoundException;
 import com.satolepsystems.task_tracker.mapper.UsuarioMapper;
 import com.satolepsystems.task_tracker.repository.UsuarioRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -1730,20 +2248,6 @@ public class UsuarioService {
 
     private final UsuarioRepository repository;
     private final UsuarioMapper mapper;
-
-    @Transactional
-    public UsuarioResponseDTO criar(UsuarioRequestDTO dto) {
-
-        if (repository.existsByEmail(dto.email())) {
-            throw new BusinessException("JÃ¡ existe um usuÃ¡rio cadastrado com o e-mail: " + dto.email());
-        }
-
-        Usuario usuario = mapper.toEntity(dto);
-        Usuario usuarioSalvo = repository.save(usuario);
-
-        return mapper.toDTO(usuarioSalvo);
-
-    }
 
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarTodos() {
@@ -1814,6 +2318,11 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+api:
+  security:
+    token:
+      secret: ${JWT_SECRET:minhachavesegura123_troque_em_producao_123456}
+
 
 ================================================
 FILE: src/main/resources/db/migration/V1__create_tables.sql
@@ -1835,6 +2344,12 @@ CREATE TABLE tb_tarefas (
     usuario_id BIGINT NOT NULL,
     CONSTRAINT fk_tarefas_usuario FOREIGN KEY (usuario_id) REFERENCES tb_usuarios(id) ON DELETE CASCADE
 );
+
+
+================================================
+FILE: src/main/resources/db/migration/V2__add_role_to_usuarios.sql
+================================================
+ALTER TABLE tb_usuarios ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'USER';
 
 
 ================================================
