@@ -21,6 +21,7 @@ public class TarefaMapper {
                 tarefa.getId(),
                 tarefa.getTitulo(),
                 tarefa.getDescricao(),
+                tarefa.getConselho(),
                 tarefa.getConcluida(),
                 tarefa.getDataCriacao(),
                 tarefa.getUsuario() != null ? tarefa.getUsuario().getId() : null

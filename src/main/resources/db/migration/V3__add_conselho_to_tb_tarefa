@@ -1,0 +1,1 @@
+ALTER TABLE tb_tarefas ADD COLUMN conselho VARCHAR(255);

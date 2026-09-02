@@ -21,6 +21,7 @@ public class TarefaService {
     private final TarefaRepository tarefaRepository;
     private final UsuarioRepository usuarioRepository;
     private final TarefaMapper mapper;
+    private final AdviceService adviceService;
 
     @Transactional
     public TarefaResponseDTO criar(TarefaRequestDTO dto) {
@@ -30,6 +31,9 @@ public class TarefaService {
 
         Tarefa tarefa = mapper.toEntity(dto);
         tarefa.setUsuario(usuario);
+
+        String conselho = adviceService.obterConselhoAleatorio();
+        tarefa.setConselho(conselho);
 
         Tarefa tarefaSalva = tarefaRepository.save(tarefa);
 

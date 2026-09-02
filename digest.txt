@@ -30,6 +30,8 @@ Directory structure:
     │   │   │               │   │   ├── AuthenticationDTO.java
     │   │   │               │   │   ├── LoginResponseDTO.java
     │   │   │               │   │   └── RegisterDTO.java
+    │   │   │               │   ├── external/
+    │   │   │               │   │   └── AdviceSlipResponseDTO.java
     │   │   │               │   ├── tarefa/
     │   │   │               │   │   ├── TarefaRequestDTO.java
     │   │   │               │   │   └── TarefaResponseDTO.java
@@ -38,6 +40,7 @@ Directory structure:
     │   │   │               │       └── UsuarioResponseDTO.java
     │   │   │               ├── infrastructure/
     │   │   │               │   ├── config/
+    │   │   │               │   │   ├── ApiClientConfig.java
     │   │   │               │   │   └── SwaggerConfig.java
     │   │   │               │   ├── exceptions/
     │   │   │               │   │   ├── BusinessException.java
@@ -56,6 +59,7 @@ Directory structure:
     │   │   │               │   ├── TarefaRepository.java
     │   │   │               │   └── UsuarioRepository.java
     │   │   │               └── service/
+    │   │   │                   ├── AdviceService.java
     │   │   │                   ├── AuthorizationService.java
     │   │   │                   ├── AuthService.java
     │   │   │                   ├── TarefaService.java
@@ -65,7 +69,8 @@ Directory structure:
     │   │       └── db/
     │   │           └── migration/
     │   │               ├── V1__create_tables.sql
-    │   │               └── V2__add_role_to_usuarios.sql
+    │   │               ├── V2__add_role_to_usuarios.sql
+    │   │               └── V3__add_conselho_to_tb_tarefa
     │   └── test/
     │       └── java/
     │           └── com/
@@ -1211,6 +1216,9 @@ public class Tarefa {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @Column(length = 255)
+    private String conselho;
+
     @Column(nullable = false)
     private Boolean concluida = false;
 
@@ -1241,7 +1249,6 @@ package com.satolepsystems.task_tracker.domain;
 import com.satolepsystems.task_tracker.domain.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -1426,6 +1433,19 @@ public record RegisterDTO(
 
 
 ================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/dto/external/AdviceSlipResponseDTO.java
+================================================
+package com.satolepsystems.task_tracker.dto.external;
+
+public record AdviceSlipResponseDTO(Slip slip) {
+
+    public record Slip(Long id, String advice) {}
+
+}
+
+
+
+================================================
 FILE: src/main/java/com/satolepsystems/task_tracker/dto/tarefa/TarefaRequestDTO.java
 ================================================
 package com.satolepsystems.task_tracker.dto.tarefa;
@@ -1473,6 +1493,9 @@ public record TarefaResponseDTO(
 
         @Schema(description = "DescriÃ§Ã£o detalhada da tarefa.", example = "Mapear endpoints com anotaÃ§Ãµes do OpenAPI")
         String descricao,
+
+        @Schema(description = "Conselho gerado via API externa para a tarefa.", example = "Never test the depth of the water with both feet.")
+        String conselho,
 
         @Schema(description = "Indica se a tarefa estÃ¡ concluÃ­da.", example = "false")
         Boolean concluida,
@@ -1547,6 +1570,34 @@ public record UsuarioResponseDTO(
         LocalDateTime dataCriacao
 
 ) {
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/infrastructure/config/ApiClientConfig.java
+================================================
+package com.satolepsystems.task_tracker.infrastructure.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
+
+@Configuration
+public class ApiClientConfig {
+
+    @Value("${api.advice.base-url:https://api.adviceslip.com}")
+    private String baseUrl;
+
+    @Bean
+    public RestClient adviceRestClient() {
+        return RestClient.builder()
+                .baseUrl(baseUrl)
+                .defaultHeader("Accept", "application/json")
+                .build();
+    }
+
 }
 
 
@@ -1945,6 +1996,7 @@ public class TarefaMapper {
                 tarefa.getId(),
                 tarefa.getTitulo(),
                 tarefa.getDescricao(),
+                tarefa.getConselho(),
                 tarefa.getConcluida(),
                 tarefa.getDataCriacao(),
                 tarefa.getUsuario() != null ? tarefa.getUsuario().getId() : null
@@ -2044,6 +2096,48 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+}
+
+
+
+================================================
+FILE: src/main/java/com/satolepsystems/task_tracker/service/AdviceService.java
+================================================
+package com.satolepsystems.task_tracker.service;
+
+import com.satolepsystems.task_tracker.dto.external.AdviceSlipResponseDTO;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AdviceService {
+
+    private final RestClient adviceRestClient;
+
+    public String obterConselhoAleatorio() {
+
+        try {
+            AdviceSlipResponseDTO response = adviceRestClient.get()
+                    .uri("/advice")
+                    .retrieve()
+                    .body(AdviceSlipResponseDTO.class);
+
+            if (response != null && response.slip() != null) {
+                return response.slip().advice();
+            }
+
+        } catch (Exception e) {
+            log.error("Erro ao consumir API externa de conselhos: {}", e.getMessage());
+        }
+
+        return "Mantenha o foco e conclua suas tarefas com disciplina.";
+
+    }
 
 }
 
@@ -2163,6 +2257,7 @@ public class TarefaService {
     private final TarefaRepository tarefaRepository;
     private final UsuarioRepository usuarioRepository;
     private final TarefaMapper mapper;
+    private final AdviceService adviceService;
 
     @Transactional
     public TarefaResponseDTO criar(TarefaRequestDTO dto) {
@@ -2172,6 +2267,9 @@ public class TarefaService {
 
         Tarefa tarefa = mapper.toEntity(dto);
         tarefa.setUsuario(usuario);
+
+        String conselho = adviceService.obterConselhoAleatorio();
+        tarefa.setConselho(conselho);
 
         Tarefa tarefaSalva = tarefaRepository.save(tarefa);
 
@@ -2350,6 +2448,12 @@ CREATE TABLE tb_tarefas (
 FILE: src/main/resources/db/migration/V2__add_role_to_usuarios.sql
 ================================================
 ALTER TABLE tb_usuarios ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'USER';
+
+
+================================================
+FILE: src/main/resources/db/migration/V3__add_conselho_to_tb_tarefa
+================================================
+ALTER TABLE tb_tarefas ADD COLUMN conselho VARCHAR(255);
 
 
 ================================================

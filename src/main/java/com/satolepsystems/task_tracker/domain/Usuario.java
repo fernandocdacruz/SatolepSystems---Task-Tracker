@@ -3,7 +3,6 @@ package com.satolepsystems.task_tracker.domain;
 import com.satolepsystems.task_tracker.domain.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

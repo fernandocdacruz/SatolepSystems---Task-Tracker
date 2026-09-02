@@ -15,6 +15,9 @@ public record TarefaResponseDTO(
         @Schema(description = "Descrição detalhada da tarefa.", example = "Mapear endpoints com anotações do OpenAPI")
         String descricao,
 
+        @Schema(description = "Conselho gerado via API externa para a tarefa.", example = "Never test the depth of the water with both feet.")
+        String conselho,
+
         @Schema(description = "Indica se a tarefa está concluída.", example = "false")
         Boolean concluida,
 

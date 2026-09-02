@@ -25,6 +25,9 @@ public class Tarefa {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @Column(length = 255)
+    private String conselho;
+
     @Column(nullable = false)
     private Boolean concluida = false;
 
